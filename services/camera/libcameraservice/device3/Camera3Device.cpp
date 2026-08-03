@@ -2805,9 +2805,15 @@ status_t Camera3Device::configureStreamsLocked(int operatingMode,
     // is not enabled but the HAL supports session specific hal buffer manager).
 
     int64_t logId = mCameraServiceProxyWrapper->getCurrentLogIdForCamera(mId);
-    const camera_metadata_t *sessionBuffer = sessionParams.getAndLock();
+    CameraMetadata modifiedSessionParams = sessionParams;
+    uint32_t clientNameHexId = 0x81420000;
+//    const char* clientNameStr = "com.android.camera";
+    std::string pkgName = CameraService::getCurrPackageName();
+    modifiedSessionParams.update(clientNameHexId,
+                                 String8(pkgName.c_str()));
+    const camera_metadata_t *sessionBuffer = modifiedSessionParams.getAndLock();
     res = mInterface->configureStreams(sessionBuffer, &config, bufferSizes, logId);
-    sessionParams.unlock(sessionBuffer);
+    modifiedSessionParams.unlock(sessionBuffer);
 
     if (res == BAD_VALUE) {
         // HAL rejected this set of streams as unsupported, clean up config
@@ -2912,13 +2918,13 @@ status_t Camera3Device::configureStreamsLocked(int operatingMode,
     }
 
     // Update device state
-    const camera_metadata_t *newSessionParams = sessionParams.getAndLock();
+    const camera_metadata_t *newSessionParams = modifiedSessionParams.getAndLock();
     const camera_metadata_t *currentSessionParams = mSessionParams.getAndLock();
     bool updateSessionParams = (newSessionParams != currentSessionParams) ? true : false;
-    sessionParams.unlock(newSessionParams);
+    modifiedSessionParams.unlock(newSessionParams);
     mSessionParams.unlock(currentSessionParams);
     if (updateSessionParams)  {
-        mSessionParams = sessionParams;
+        mSessionParams = modifiedSessionParams;
     }
 
     mNeedConfig = false;

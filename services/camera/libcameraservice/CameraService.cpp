@@ -2585,6 +2585,7 @@ Status CameraService::connectHelper(const sp<CALLBACK>& cameraCb, const std::str
 
     const std::string clientPackageName =
             clientAttribution.packageName.value_or(kUnknownPackageName);
+    sCurrPackageName = clientPackageName;
 
     sCurrPackageName = clientPackageName;
 
